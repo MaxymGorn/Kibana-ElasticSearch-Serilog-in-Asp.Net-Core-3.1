@@ -1,0 +1,73 @@
+networks:
+  elasti:
+    driver: bridge
+services:
+  elastickibanaloggingverify:
+    build:
+      context: C:\Users\MAKS\Downloads\ElasticKibanaLogging-master\ElasticKibanaLogging-master\ElasticKibanaLoggingVerify
+      dockerfile: ElasticKibanaLoggingVerify/Dockerfile
+      labels:
+        com.microsoft.created-by: visual-studio
+        com.microsoft.visual-studio.project-name: ElasticKibanaLoggingVerify
+      target: base
+    container_name: ElasticKibanaLoggingVerify
+    entrypoint: tail -f /dev/null
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_LOGGING__CONSOLE__DISABLECOLORS: "true"
+      ASPNETCORE_URLS: https://+:443;http://+:80
+      DOTNET_USE_POLLING_FILE_WATCHER: '1'
+      NUGET_FALLBACK_PACKAGES: /root/.nuget/fallbackpackages;/root/.nuget/fallbackpackages2
+    image: elastickibanaloggingverify:dev
+    labels:
+      com.microsoft.visualstudio.debuggee.arguments: ' --additionalProbingPath /root/.nuget/packages
+        --additionalProbingPath /root/.nuget/fallbackpackages --additionalProbingPath
+        /root/.nuget/fallbackpackages2  "/app/bin/Debug/netcoreapp3.1/ElasticKibanaLoggingVerify.dll"'
+      com.microsoft.visualstudio.debuggee.killprogram: /bin/sh -c "if PID=$$(pidof
+        dotnet); then kill $$PID; fi"
+      com.microsoft.visualstudio.debuggee.program: dotnet
+      com.microsoft.visualstudio.debuggee.workingdirectory: /app
+    ports:
+    - target: 80
+    - target: 443
+    tty: true
+    volumes:
+    - C:\Users\MAKS\Downloads\ElasticKibanaLogging-master\ElasticKibanaLogging-master\ElasticKibanaLoggingVerify\ElasticKibanaLoggingVerify:/app:rw
+    - C:\Users\MAKS\vsdbg\vs2017u5:/remote_debugger:rw
+    - C:\Users\MAKS\AppData\Roaming\ASP.NET\Https:/root/.aspnet/https:ro
+    - C:\Users\MAKS\AppData\Roaming\Microsoft\UserSecrets:/root/.microsoft/usersecrets:ro
+    - C:\Microsoft\Xamarin\NuGet:/root/.nuget/fallbackpackages:ro
+    - C:\Program Files\dotnet\sdk\NuGetFallbackFolder:/root/.nuget/fallbackpackages2:ro
+    - C:\Users\MAKS\.nuget\packages:/root/.nuget/packages:ro
+    - C:\Users\MAKS\Downloads\ElasticKibanaLogging-master\ElasticKibanaLogging-master\ElasticKibanaLoggingVerify:/src:rw
+  elasticsearch:
+    container_name: elasticsearch
+    environment:
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      discovery.type: single-node
+      xpack.monitoring.enabled: "true"
+      xpack.watcher.enabled: "false"
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.1
+    networks:
+      elasti: {}
+    ports:
+    - published: 9200
+      target: 9200
+    volumes:
+    - elasticsearch-data:/usr/share/elasticsearch/data:rw
+  kibana:
+    container_name: kibana
+    depends_on:
+      elasticsearch:
+        condition: service_started
+    environment:
+      ELASTICSEARCH_URL: http://localhost:9200
+    image: docker.elastic.co/kibana/kibana:7.9.1
+    networks:
+      elasti: {}
+    ports:
+    - published: 5601
+      target: 5601
+version: '3.4'
+volumes:
+  elasticsearch-data: {}

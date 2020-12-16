@@ -1,0 +1,49 @@
+networks:
+  elasti:
+    driver: bridge
+services:
+  elastickibanaloggingverify:
+    build:
+      context: C:\Users\MAKS\Downloads\ElasticKibanaLogging-master\ElasticKibanaLogging-master\ElasticKibanaLoggingVerify
+      dockerfile: ElasticKibanaLoggingVerify/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: https://+:443;http://+:80
+    image: elastickibanaloggingverify
+    ports:
+    - target: 80
+    - target: 443
+    volumes:
+    - C:\Users\MAKS\.aspnet\https:/root/.aspnet/https:ro
+    - C:\Users\MAKS\.microsoft\usersecrets:/root/.microsoft/usersecrets:ro
+  elasticsearch:
+    container_name: elasticsearch
+    environment:
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      discovery.type: single-node
+      xpack.monitoring.enabled: "true"
+      xpack.watcher.enabled: "false"
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.1
+    networks:
+      elasti: {}
+    ports:
+    - published: 9200
+      target: 9200
+    volumes:
+    - elasticsearch-data:/usr/share/elasticsearch/data:rw
+  kibana:
+    container_name: kibana
+    depends_on:
+      elasticsearch:
+        condition: service_started
+    environment:
+      ELASTICSEARCH_URL: http://localhost:9200
+    image: docker.elastic.co/kibana/kibana:7.9.1
+    networks:
+      elasti: {}
+    ports:
+    - published: 5601
+      target: 5601
+version: '3.4'
+volumes:
+  elasticsearch-data: {}
